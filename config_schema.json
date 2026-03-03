@@ -2,78 +2,232 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "Win Celebration Plugin Configuration",
-  "description": "Configuration for the Win Celebration plugin. Place each team's GIF file alongside manager.py and reference it by filename in the team's gif_file field.",
+  "description": "Configuration for the Win Celebration plugin. Place each team's GIF file alongside manager.py and reference it by filename in gif_file. Slots team1–team5 are checked in order; leave abbreviation blank to disable a slot.",
   "properties": {
     "enabled": {
       "type": "boolean",
       "description": "Enable or disable the plugin",
       "default": true
     },
-    "teams": {
-      "type": "array",
-      "description": "Teams to monitor. Each team can have its own GIF, win text, and brand colors. All configured teams are monitored simultaneously — when multiple teams win on the same day each celebration fires independently.",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "required": ["abbreviation", "sport"],
-        "properties": {
-          "abbreviation": {
-            "type": "string",
-            "description": "ESPN team abbreviation (e.g. PIT, CHC, NYY, PHI, LAL, PIT)"
-          },
-          "sport": {
-            "type": "string",
-            "description": "Sport / league",
-            "enum": ["mlb", "nfl", "nba", "nhl"],
-            "default": "mlb"
-          },
-          "gif_file": {
-            "type": "string",
-            "description": "Animated GIF filename to display on a win. Bundled options: jolly-roger.gif (Pirates), fly-the-w.gif (Cubs). Drop any custom GIF alongside manager.py and reference it by filename. Falls back to a programmatic waving-flag animation if the file is missing.",
-            "default": "jolly-roger.gif",
-            "examples": ["jolly-roger.gif", "fly-the-w.gif"]
-          },
-          "win_text": {
-            "type": "string",
-            "description": "Short text overlay displayed when this team wins (e.g. 'RAISE IT!', 'CUBS WIN!', 'LET'S GO PENS!'). Defaults to '<ABBR> WINS!' if omitted."
-          },
-          "primary_color": {
-            "type": "array",
-            "description": "Team primary color used for win text and the programmatic fallback animation [R, G, B]",
-            "items": {"type": "integer", "minimum": 0, "maximum": 255},
-            "minItems": 3,
-            "maxItems": 3,
-            "default": [255, 255, 255]
-          },
-          "secondary_color": {
-            "type": "array",
-            "description": "Team secondary color used in the programmatic fallback animation [R, G, B]",
-            "items": {"type": "integer", "minimum": 0, "maximum": 255},
-            "minItems": 3,
-            "maxItems": 3,
-            "default": [0, 0, 0]
-          }
+    "team1": {
+      "type": "object",
+      "description": "Team 1 — primary team to monitor",
+      "properties": {
+        "abbreviation": {
+          "type": "string",
+          "description": "ESPN team abbreviation (e.g. PIT, CHC, NYY). Leave blank to disable this slot.",
+          "default": "PIT"
         },
-        "additionalProperties": false
-      },
-      "default": [
-        {
-          "abbreviation": "PIT",
-          "sport": "mlb",
-          "gif_file": "jolly-roger.gif",
-          "win_text": "RAISE IT!",
-          "primary_color": [253, 184, 39],
-          "secondary_color": [0, 0, 0]
+        "sport": {
+          "type": "string",
+          "description": "Sport / league",
+          "enum": ["mlb", "nfl", "nba", "nhl"],
+          "default": "mlb"
         },
-        {
-          "abbreviation": "CHC",
-          "sport": "mlb",
-          "gif_file": "fly-the-w.gif",
-          "win_text": "CUBS WIN!",
-          "primary_color": [14, 51, 134],
-          "secondary_color": [204, 52, 51]
+        "gif_file": {
+          "type": "string",
+          "description": "Animated GIF filename. Bundled: jolly-roger.gif (Pirates), fly-the-w.gif (Cubs). Drop any custom GIF alongside manager.py.",
+          "default": "jolly-roger.gif"
+        },
+        "win_text": {
+          "type": "string",
+          "description": "Short text overlay when this team wins (e.g. RAISE IT!). Defaults to '<ABBR> WINS!' if blank.",
+          "default": "RAISE IT!"
+        },
+        "primary_color": {
+          "type": "array",
+          "description": "Team primary color [R, G, B] — used for win text and programmatic fallback animation",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [253, 184, 39]
+        },
+        "secondary_color": {
+          "type": "array",
+          "description": "Team secondary color [R, G, B] — used in programmatic fallback animation",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 0, 0]
         }
-      ]
+      },
+      "additionalProperties": false
+    },
+    "team2": {
+      "type": "object",
+      "description": "Team 2 — optional second team to monitor",
+      "properties": {
+        "abbreviation": {
+          "type": "string",
+          "description": "ESPN team abbreviation (e.g. CHC, NYY). Leave blank to disable this slot.",
+          "default": "CHC"
+        },
+        "sport": {
+          "type": "string",
+          "description": "Sport / league",
+          "enum": ["mlb", "nfl", "nba", "nhl"],
+          "default": "mlb"
+        },
+        "gif_file": {
+          "type": "string",
+          "description": "Animated GIF filename. Bundled: jolly-roger.gif (Pirates), fly-the-w.gif (Cubs).",
+          "default": "fly-the-w.gif"
+        },
+        "win_text": {
+          "type": "string",
+          "description": "Short text overlay when this team wins.",
+          "default": "CUBS WIN!"
+        },
+        "primary_color": {
+          "type": "array",
+          "description": "Team primary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [14, 51, 134]
+        },
+        "secondary_color": {
+          "type": "array",
+          "description": "Team secondary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [204, 52, 51]
+        }
+      },
+      "additionalProperties": false
+    },
+    "team3": {
+      "type": "object",
+      "description": "Team 3 — optional third team to monitor",
+      "properties": {
+        "abbreviation": {
+          "type": "string",
+          "description": "ESPN team abbreviation. Leave blank to disable this slot.",
+          "default": ""
+        },
+        "sport": {
+          "type": "string",
+          "description": "Sport / league",
+          "enum": ["mlb", "nfl", "nba", "nhl"],
+          "default": "mlb"
+        },
+        "gif_file": {
+          "type": "string",
+          "description": "Animated GIF filename.",
+          "default": "celebrate.gif"
+        },
+        "win_text": {
+          "type": "string",
+          "description": "Short text overlay when this team wins.",
+          "default": ""
+        },
+        "primary_color": {
+          "type": "array",
+          "description": "Team primary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255]
+        },
+        "secondary_color": {
+          "type": "array",
+          "description": "Team secondary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 0, 0]
+        }
+      },
+      "additionalProperties": false
+    },
+    "team4": {
+      "type": "object",
+      "description": "Team 4 — optional fourth team to monitor",
+      "properties": {
+        "abbreviation": {
+          "type": "string",
+          "description": "ESPN team abbreviation. Leave blank to disable this slot.",
+          "default": ""
+        },
+        "sport": {
+          "type": "string",
+          "description": "Sport / league",
+          "enum": ["mlb", "nfl", "nba", "nhl"],
+          "default": "mlb"
+        },
+        "gif_file": {
+          "type": "string",
+          "description": "Animated GIF filename.",
+          "default": "celebrate.gif"
+        },
+        "win_text": {
+          "type": "string",
+          "description": "Short text overlay when this team wins.",
+          "default": ""
+        },
+        "primary_color": {
+          "type": "array",
+          "description": "Team primary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255]
+        },
+        "secondary_color": {
+          "type": "array",
+          "description": "Team secondary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 0, 0]
+        }
+      },
+      "additionalProperties": false
+    },
+    "team5": {
+      "type": "object",
+      "description": "Team 5 — optional fifth team to monitor",
+      "properties": {
+        "abbreviation": {
+          "type": "string",
+          "description": "ESPN team abbreviation. Leave blank to disable this slot.",
+          "default": ""
+        },
+        "sport": {
+          "type": "string",
+          "description": "Sport / league",
+          "enum": ["mlb", "nfl", "nba", "nhl"],
+          "default": "mlb"
+        },
+        "gif_file": {
+          "type": "string",
+          "description": "Animated GIF filename.",
+          "default": "celebrate.gif"
+        },
+        "win_text": {
+          "type": "string",
+          "description": "Short text overlay when this team wins.",
+          "default": ""
+        },
+        "primary_color": {
+          "type": "array",
+          "description": "Team primary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [255, 255, 255]
+        },
+        "secondary_color": {
+          "type": "array",
+          "description": "Team secondary color [R, G, B]",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [0, 0, 0]
+        }
+      },
+      "additionalProperties": false
     },
     "celebration_hours": {
       "type": "number",
@@ -84,7 +238,7 @@
     },
     "team_display_duration": {
       "type": "integer",
-      "description": "When multiple teams are celebrating simultaneously, how many seconds to show each team's animation before rotating to the next",
+      "description": "When multiple teams are celebrating, seconds to show each team's animation before rotating to the next",
       "default": 30,
       "minimum": 5,
       "maximum": 300
@@ -105,7 +259,7 @@
     },
     "animation_fps": {
       "type": "number",
-      "description": "Target frames per second for the programmatic fallback animation (GIF frame durations are used instead when a GIF is loaded)",
+      "description": "Target FPS for the programmatic fallback animation (GIF frame durations are used when a GIF is loaded)",
       "default": 12.0,
       "minimum": 1.0,
       "maximum": 60.0
@@ -139,7 +293,7 @@
     },
     "live_priority": {
       "type": "boolean",
-      "description": "When true, the plugin takes over the display immediately after a win instead of waiting for its normal rotation slot",
+      "description": "Take over the display immediately after a win instead of waiting for the normal rotation slot",
       "default": true
     },
     "transition": {
@@ -162,25 +316,25 @@
           "type": "boolean",
           "default": true
         }
-      }
+      },
+      "additionalProperties": false
     },
     "simulate_win": {
       "type": "boolean",
-      "description": "Simulate a win for testing — activates the celebration immediately without waiting for a real game. Set back to false to cancel.",
+      "description": "Simulate a win for testing — activates the celebration immediately. Set back to false to cancel.",
       "default": false
     },
     "simulate_team": {
       "type": "string",
-      "description": "Team abbreviation to simulate winning (empty = first configured team)",
+      "description": "Team abbreviation to simulate winning (blank = first active slot)",
       "default": ""
     },
     "vegas_mode": {
       "type": "string",
-      "description": "How this plugin appears in Vegas scroll mode. 'static' pauses the scroll while the GIF displays (recommended). 'fixed' scrolls it as a block.",
+      "description": "How this plugin appears in Vegas scroll mode",
       "enum": ["static", "fixed"],
       "default": "static"
     }
   },
-  "required": ["teams"],
   "additionalProperties": false
 }

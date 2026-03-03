@@ -177,7 +177,13 @@ class WinCelebrationPlugin(BasePlugin):
     # ------------------------------------------------------------------
 
     def _load_config(self) -> None:
-        self._teams_config: List[Dict[str, Any]] = self.config.get("teams", [])
+        # Build the teams list from named slots team1–team5.
+        # Slots with a blank abbreviation are silently skipped.
+        self._teams_config: List[Dict[str, Any]] = [
+            self.config[slot]
+            for slot in ("team1", "team2", "team3", "team4", "team5")
+            if self.config.get(slot, {}).get("abbreviation", "").strip()
+        ]
         self.update_interval_seconds: int = int(self.config.get("update_interval", 300))
         self.celebration_hours: float = float(self.config.get("celebration_hours", 1.0))
         self.animation_fps: float = float(self.config.get("animation_fps", 12.0))
@@ -693,8 +699,10 @@ class WinCelebrationPlugin(BasePlugin):
         if not super().validate_config():
             return False
 
-        if not self.config.get("teams"):
-            self.logger.error("No teams configured — add at least one entry to 'teams'")
+        if not self._teams_config:
+            self.logger.error(
+                "No teams configured — set an abbreviation in at least one of team1–team5"
+            )
             return False
 
         hours = self.config.get("celebration_hours", 1.0)
