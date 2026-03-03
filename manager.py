@@ -239,6 +239,9 @@ class WinCelebrationPlugin(BasePlugin):
 
             for raw_frame in ImageSequence.Iterator(gif):
                 duration_ms = raw_frame.info.get("duration", 100)
+                # GIFs with duration=0 are treated as 100ms by browsers — apply same standard
+                if not duration_ms:
+                    duration_ms = 100
                 durations.append(duration_ms / 1000.0)
 
                 frame_rgba = raw_frame.convert("RGBA")
