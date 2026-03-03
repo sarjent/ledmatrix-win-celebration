@@ -29,8 +29,9 @@
           },
           "gif_file": {
             "type": "string",
-            "description": "Animated GIF filename to display on a win. Place the file alongside manager.py. Falls back to a programmatic waving-flag animation if the file is missing.",
-            "default": "celebrate.gif"
+            "description": "Animated GIF filename to display on a win. Bundled options: jolly-roger.gif (Pirates), fly-the-w.gif (Cubs). Drop any custom GIF alongside manager.py and reference it by filename. Falls back to a programmatic waving-flag animation if the file is missing.",
+            "default": "jolly-roger.gif",
+            "examples": ["jolly-roger.gif", "fly-the-w.gif"]
           },
           "win_text": {
             "type": "string",
@@ -63,6 +64,14 @@
           "win_text": "RAISE IT!",
           "primary_color": [253, 184, 39],
           "secondary_color": [0, 0, 0]
+        },
+        {
+          "abbreviation": "CHC",
+          "sport": "mlb",
+          "gif_file": "fly-the-w.gif",
+          "win_text": "CUBS WIN!",
+          "primary_color": [14, 51, 134],
+          "secondary_color": [204, 52, 51]
         }
       ]
     },
