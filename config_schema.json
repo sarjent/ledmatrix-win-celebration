@@ -52,9 +52,9 @@
         },
         "animation_style": {
           "type": "string",
-          "description": "Programmatic animation to use when no GIF is loaded. 'waving_flag' shows a color-wave flag with the team abbreviation. 'skull_crossbones' draws a pulsing skull-and-crossbones in the team's brand colors.",
-          "enum": ["waving_flag", "skull_crossbones"],
-          "default": "waving_flag"
+          "description": "Programmatic animation when no GIF is loaded. 'skull_crossbones' — pulsing skull-and-crossbones in brand colors (PIT default). 'waving_flag' — color-wave flag with team abbreviation (CHC default). 'team_logo' — team logo from LEDMatrix assets with pulsing brightness (default for all other teams).",
+          "enum": ["waving_flag", "skull_crossbones", "team_logo"],
+          "default": "skull_crossbones"
         }
       },
       "additionalProperties": false
@@ -102,8 +102,8 @@
         },
         "animation_style": {
           "type": "string",
-          "description": "Programmatic animation style used when no GIF is loaded: 'waving_flag' or 'skull_crossbones'.",
-          "enum": ["waving_flag", "skull_crossbones"],
+          "description": "Programmatic animation style when no GIF is loaded: 'waving_flag', 'skull_crossbones', or 'team_logo'.",
+          "enum": ["waving_flag", "skull_crossbones", "team_logo"],
           "default": "waving_flag"
         }
       },
@@ -152,9 +152,9 @@
         },
         "animation_style": {
           "type": "string",
-          "description": "Programmatic animation style used when no GIF is loaded: 'waving_flag' or 'skull_crossbones'.",
-          "enum": ["waving_flag", "skull_crossbones"],
-          "default": "waving_flag"
+          "description": "Programmatic animation style when no GIF is loaded: 'waving_flag', 'skull_crossbones', or 'team_logo'.",
+          "enum": ["waving_flag", "skull_crossbones", "team_logo"],
+          "default": "team_logo"
         }
       },
       "additionalProperties": false
@@ -202,9 +202,9 @@
         },
         "animation_style": {
           "type": "string",
-          "description": "Programmatic animation style used when no GIF is loaded: 'waving_flag' or 'skull_crossbones'.",
-          "enum": ["waving_flag", "skull_crossbones"],
-          "default": "waving_flag"
+          "description": "Programmatic animation style when no GIF is loaded: 'waving_flag', 'skull_crossbones', or 'team_logo'.",
+          "enum": ["waving_flag", "skull_crossbones", "team_logo"],
+          "default": "team_logo"
         }
       },
       "additionalProperties": false
@@ -252,9 +252,9 @@
         },
         "animation_style": {
           "type": "string",
-          "description": "Programmatic animation style used when no GIF is loaded: 'waving_flag' or 'skull_crossbones'.",
-          "enum": ["waving_flag", "skull_crossbones"],
-          "default": "waving_flag"
+          "description": "Programmatic animation style when no GIF is loaded: 'waving_flag', 'skull_crossbones', or 'team_logo'.",
+          "enum": ["waving_flag", "skull_crossbones", "team_logo"],
+          "default": "team_logo"
         }
       },
       "additionalProperties": false

@@ -159,6 +159,9 @@ class WinCelebrationPlugin(BasePlugin):
         # Signal high-FPS mode to the display controller for smooth GIF animation
         self.enable_scrolling: bool = True
 
+        # Cache for team logo images (loaded once, reused across frames)
+        self._logo_cache: Dict[str, Optional[Image.Image]] = {}
+
         self._flash_period: float = 0.5   # seconds between win-text flashes
 
         # Pre-load GIF frames for every configured team
@@ -275,6 +278,8 @@ class WinCelebrationPlugin(BasePlugin):
         w, h = self.display_width, self.display_height
         if state.animation_style == "skull_crossbones":
             renderer = self._render_skull_frame
+        elif state.animation_style == "team_logo":
+            renderer = self._render_logo_frame
         else:
             renderer = self._render_flag_frame
         state.frames = [renderer(state, w, h, i, num_frames) for i in range(num_frames)]
@@ -445,6 +450,111 @@ class WinCelebrationPlugin(BasePlugin):
             text_y = h - self.font_size - 2
             self._draw_small_text(draw, state.win_text, 1, text_y, BLACK)    # shadow
             self._draw_small_text(draw, state.win_text, 0, text_y - 1, skull_color)
+
+        return img
+
+    # Logo paths follow the LEDMatrix assets convention:
+    # assets/sports/{sport}_logos/{ABBR}.png  (relative to CWD = LEDMatrix root)
+    _LOGO_DIRS: Dict[str, str] = {
+        "mlb": "assets/sports/mlb_logos",
+        "nfl": "assets/sports/nfl_logos",
+        "nba": "assets/sports/nba_logos",
+        "nhl": "assets/sports/nhl_logos",
+    }
+
+    def _load_team_logo(self, state: "_TeamState") -> Optional[Image.Image]:
+        """
+        Load (and cache) the team logo from the LEDMatrix assets directory.
+
+        The logo is resized to fit the display height while preserving aspect
+        ratio, then cached so it is only read from disk once per team.
+
+        Returns None if the logo file is missing or cannot be opened.
+        """
+        cache_key = f"{state.sport}_{state.abbreviation}"
+        if cache_key in self._logo_cache:
+            return self._logo_cache[cache_key]
+
+        logo_dir = self._LOGO_DIRS.get(state.sport, f"assets/sports/{state.sport}_logos")
+        logo_path = Path(logo_dir) / f"{state.abbreviation}.png"
+
+        logo: Optional[Image.Image] = None
+        try:
+            if logo_path.exists():
+                raw = Image.open(logo_path).convert("RGBA")
+                # Crop transparent border for a tighter fit
+                bbox = raw.getbbox()
+                if bbox:
+                    raw = raw.crop(bbox)
+                target_h = self.display_height - 2
+                ratio = target_h / max(raw.height, 1)
+                target_w = max(1, int(raw.width * ratio))
+                logo = raw.resize((target_w, target_h), Image.Resampling.LANCZOS)
+                self.logger.info(
+                    "[%s] Loaded team logo from %s (%dx%d)",
+                    state.abbreviation, logo_path, target_w, target_h,
+                )
+            else:
+                self.logger.warning(
+                    "[%s] Team logo not found at %s", state.abbreviation, logo_path
+                )
+        except Exception as exc:
+            self.logger.warning("[%s] Failed to load team logo: %s", state.abbreviation, exc)
+
+        self._logo_cache[cache_key] = logo
+        return logo
+
+    def _render_logo_frame(
+        self, state: "_TeamState", w: int, h: int, frame_idx: int, num_frames: int
+    ) -> Image.Image:
+        """
+        Render a single frame that shows the team logo with pulsing brightness.
+
+        The logo is placed on the left side of the canvas; win text and score
+        are drawn to the right.  Falls back to a solid primary-colour rectangle
+        labelled with the team abbreviation when no logo file is found.
+        """
+        img = Image.new("RGB", (w, h), BLACK)
+        draw = ImageDraw.Draw(img)
+
+        phase = (2 * math.pi * frame_idx) / num_frames
+        brightness = 0.6 + 0.4 * (0.5 + 0.5 * math.sin(phase))
+
+        logo = self._load_team_logo(state)
+        if logo:
+            # Dim logo channels to match the pulse brightness
+            r, g, b, a = logo.split()
+            def _dim_ch(ch: Any) -> Any:
+                return ch.point(lambda x: int(x * brightness))
+            bright_logo = Image.merge("RGBA", (_dim_ch(r), _dim_ch(g), _dim_ch(b), a))
+            paste_x = 1
+            paste_y = (h - bright_logo.height) // 2
+            img.paste(bright_logo, (paste_x, paste_y), bright_logo)
+            text_x = bright_logo.width + 4
+        else:
+            # Fallback: colored square with abbreviation
+            sq = min(h - 4, 20)
+            sq_color = tuple(max(0, min(255, int(c * brightness))) for c in state.primary_color)
+            draw.rectangle([2, (h - sq) // 2, 2 + sq, (h + sq) // 2], fill=sq_color)
+            abbr = state.abbreviation
+            bbox = draw.textbbox((0, 0), abbr, font=self.font)
+            abbr_w = bbox[2] - bbox[0]
+            self._draw_small_text(draw, abbr, 2 + (sq - abbr_w) // 2, (h - self.font_size) // 2, BLACK)
+            text_x = sq + 5
+
+        # Win text and score to the right of the logo
+        text_color = tuple(max(0, min(255, int(c * brightness))) for c in state.primary_color)
+        if self.show_text and state.win_text:
+            self._draw_small_text(draw, state.win_text, text_x, 2, text_color)
+
+        if self.show_score and state.win_info:
+            team_score = state.win_info.get("team_score", 0)
+            opp_score  = state.win_info.get("opp_score", 0)
+            opp_abbr   = state.win_info.get("opp_abbr", "OPP")
+            line1 = f"{state.abbreviation} {team_score}"
+            line2 = f"{opp_abbr} {opp_score}"
+            self._draw_small_text(draw, line1, text_x, h // 2 - self.font_size, WHITE)
+            self._draw_small_text(draw, line2, text_x, h // 2 + 1, DIM_RED)
 
         return img
 
@@ -860,6 +970,7 @@ class WinCelebrationPlugin(BasePlugin):
         super().on_config_change(new_config)
         self._load_config()
         self._load_fonts()
+        self._logo_cache.clear()  # team abbreviations or sports may have changed
 
         # Rebuild team states from the updated config, preserving existing win state
         new_states: Dict[str, _TeamState] = {}
@@ -915,4 +1026,5 @@ class WinCelebrationPlugin(BasePlugin):
             state.win_info = {}
             state.celebrating = False
             state.live_priority_fired = False
+        self._logo_cache.clear()
         self.logger.info("Win Celebration plugin cleaned up")
