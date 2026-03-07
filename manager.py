@@ -366,7 +366,11 @@ class WinCelebrationPlugin(BasePlugin):
         skull_cy = h // 2 - skull_ry // 3  # sit slightly above centre
 
         # ── 1. Crossbones (behind skull) ──────────────────────────────────
-        bone_len  = int(skull_rx * 1.8)
+        # Cap bone_len so the diagonal stays within the display height;
+        # on wide/short panels (e.g. 192x32) skull_rx can be very large
+        # relative to h, pushing the bone endpoints far off-screen and
+        # hiding the crossbones behind the skull in the visible area.
+        bone_len  = min(int(skull_rx * 1.8), (h - 4) // 2)
         bone_half = max(1, skull_rx // 4)  # half-thickness of each bone
 
         # Bone 1: top-left ↘ bottom-right
