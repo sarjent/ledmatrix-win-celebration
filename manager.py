@@ -58,6 +58,7 @@ class _TeamState:
         self.sport: str = team_cfg.get("sport", "mlb").lower()
         self.gif_path: Path = Path(__file__).parent / team_cfg.get("gif_file", "celebrate.gif")
         self.win_text: str = team_cfg.get("win_text", f"{self.abbreviation} WINS!")
+        self.animation_style: str = team_cfg.get("animation_style", "waving_flag")
         self.primary_color: Tuple[int, int, int] = _to_rgb(
             team_cfg.get("primary_color", [255, 255, 255]), WHITE
         )
@@ -268,16 +269,20 @@ class WinCelebrationPlugin(BasePlugin):
             self.logger.error("[%s] Error loading GIF: %s", state.abbreviation, exc, exc_info=True)
             return False
 
-    def _build_programmatic_frames(self, state: _TeamState, num_frames: int = 16) -> None:
-        """Generate a waving flag animation using the team's brand colors."""
+    def _build_programmatic_frames(self, state: _TeamState, num_frames: int = 24) -> None:
+        """Generate a programmatic animation using the team's brand colors."""
         frame_duration = 1.0 / max(self.animation_fps, 1.0)
         w, h = self.display_width, self.display_height
-        state.frames = [
-            self._render_flag_frame(state, w, h, i, num_frames)
-            for i in range(num_frames)
-        ]
+        if state.animation_style == "skull_crossbones":
+            renderer = self._render_skull_frame
+        else:
+            renderer = self._render_flag_frame
+        state.frames = [renderer(state, w, h, i, num_frames) for i in range(num_frames)]
         state.frame_durations = [frame_duration] * num_frames
-        self.logger.debug("[%s] Built %d programmatic frames", state.abbreviation, num_frames)
+        self.logger.debug(
+            "[%s] Built %d programmatic frames (style=%s)",
+            state.abbreviation, num_frames, state.animation_style,
+        )
 
     def _render_flag_frame(
         self, state: _TeamState, w: int, h: int, frame_idx: int, num_frames: int
@@ -318,6 +323,124 @@ class WinCelebrationPlugin(BasePlugin):
         # Win text to the right of the flag
         if self.show_text:
             self._draw_small_text(draw, "WIN!", flag_w + 2, 2 + self.font_size + 1, state.primary_color)
+
+        return img
+
+    def _render_skull_frame(
+        self, state: _TeamState, w: int, h: int, frame_idx: int, num_frames: int
+    ) -> Image.Image:
+        """
+        Render a single skull-and-crossbones frame.
+
+        The skull head is drawn centered slightly above the vertical midpoint,
+        with two crossed bones behind it. All elements scale proportionally to
+        the display dimensions so the animation looks good on any panel size.
+
+        Animation cycle (over num_frames):
+          - Skull pulses in brightness (sine wave, 60–100 % of primary color)
+          - Eye sockets flash bright (pale amber) for 2 frames every quarter-cycle
+        """
+        img = Image.new("RGB", (w, h), BLACK)
+        draw = ImageDraw.Draw(img)
+
+        phase = (2 * math.pi * frame_idx) / num_frames
+        # Brightness oscillates between 0.6 and 1.0
+        brightness = 0.6 + 0.4 * (0.5 + 0.5 * math.sin(phase))
+
+        def _dim(color: Tuple[int, int, int], b: float) -> Tuple[int, int, int]:
+            return (
+                max(0, min(255, int(color[0] * b))),
+                max(0, min(255, int(color[1] * b))),
+                max(0, min(255, int(color[2] * b))),
+            )
+
+        skull_color = _dim(state.primary_color, brightness)
+        # Crossbones use secondary color if non-black, else dim primary
+        bone_base = state.secondary_color if any(c > 30 for c in state.secondary_color) else state.primary_color
+        bone_color = _dim(bone_base, brightness * 0.75)
+
+        # ── Skull geometry (all values scale with display size) ──────────────
+        skull_rx = max(4, w // 8)          # horizontal radius
+        skull_ry = max(3, h // 4)          # vertical radius
+        skull_cx = w // 2
+        skull_cy = h // 2 - skull_ry // 3  # sit slightly above centre
+
+        # ── 1. Crossbones (behind skull) ──────────────────────────────────
+        bone_len  = int(skull_rx * 1.8)
+        bone_half = max(1, skull_rx // 4)  # half-thickness of each bone
+
+        # Bone 1: top-left ↘ bottom-right
+        for off in range(-bone_half, bone_half + 1):
+            draw.line(
+                [(skull_cx - bone_len + off, skull_cy - bone_len),
+                 (skull_cx + bone_len + off, skull_cy + bone_len)],
+                fill=bone_color,
+            )
+        # Bone 2: top-right ↙ bottom-left
+        for off in range(-bone_half, bone_half + 1):
+            draw.line(
+                [(skull_cx + bone_len + off, skull_cy - bone_len),
+                 (skull_cx - bone_len + off, skull_cy + bone_len)],
+                fill=bone_color,
+            )
+        # Round knobs at bone ends
+        knob_r = max(1, bone_half + 1)
+        for bx, by in [
+            (skull_cx - bone_len, skull_cy - bone_len),
+            (skull_cx + bone_len, skull_cy + bone_len),
+            (skull_cx + bone_len, skull_cy - bone_len),
+            (skull_cx - bone_len, skull_cy + bone_len),
+        ]:
+            draw.ellipse([bx - knob_r, by - knob_r, bx + knob_r, by + knob_r], fill=bone_color)
+
+        # ── 2. Skull cranium (filled ellipse) ────────────────────────────
+        draw.ellipse(
+            [skull_cx - skull_rx, skull_cy - skull_ry,
+             skull_cx + skull_rx, skull_cy + skull_ry],
+            fill=skull_color,
+        )
+
+        # ── 3. Eye sockets ───────────────────────────────────────────────
+        eye_r  = max(1, skull_rx // 3)
+        eye_y  = skull_cy - skull_ry // 5
+        eye_dx = skull_rx // 2
+
+        # Eye flash: 2 frames per quarter-cycle
+        eye_fill = BLACK
+        quarter = num_frames // 4
+        if quarter > 0 and (frame_idx % quarter) < 2:
+            eye_fill = (255, 230, 120)  # pale amber
+
+        for ex in (skull_cx - eye_dx, skull_cx + eye_dx):
+            draw.ellipse([ex - eye_r, eye_y - eye_r, ex + eye_r, eye_y + eye_r], fill=eye_fill)
+
+        # ── 4. Nasal cavity (small inverted-triangle) ────────────────────
+        ns = max(1, skull_rx // 4)
+        ny = skull_cy + skull_ry // 6
+        draw.polygon(
+            [(skull_cx, ny + ns), (skull_cx - ns, ny - ns // 2), (skull_cx + ns, ny - ns // 2)],
+            fill=BLACK,
+        )
+
+        # ── 5. Teeth row ────────────────────────────────────────────────
+        tooth_w   = max(1, skull_rx // 3)
+        tooth_h   = max(1, skull_ry // 3)
+        tooth_gap = tooth_w + max(1, tooth_w // 2)
+        teeth_top = skull_cy + skull_ry - tooth_h
+
+        num_teeth = max(2, skull_rx * 2 // tooth_gap)
+        teeth_total = num_teeth * tooth_gap - (tooth_gap - tooth_w)
+        teeth_x0 = skull_cx - teeth_total // 2
+
+        for i in range(num_teeth):
+            tx = teeth_x0 + i * tooth_gap
+            draw.rectangle([tx, teeth_top, tx + tooth_w, skull_cy + skull_ry], fill=BLACK)
+
+        # ── 6. Optional win-text overlay ────────────────────────────────
+        if self.show_text:
+            text_y = h - self.font_size - 2
+            self._draw_small_text(draw, state.win_text, 1, text_y, BLACK)    # shadow
+            self._draw_small_text(draw, state.win_text, 0, text_y - 1, skull_color)
 
         return img
 
