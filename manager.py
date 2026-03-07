@@ -168,6 +168,14 @@ class WinCelebrationPlugin(BasePlugin):
         for state in self._team_states.values():
             self._build_frames(state)
 
+        # Activate simulation immediately so live-priority fires even when the
+        # display controller uses fast-startup (cached-data) mode and delays
+        # the first update() call.
+        if self.simulate_win:
+            target = self.simulate_team or next(iter(self._team_states), "")
+            if target in self._team_states:
+                self._trigger_simulation(self._team_states[target])
+
         self.logger.info(
             "Win Celebration plugin initialised — %d team(s): %s (display %dx%d)",
             len(self._team_states),
