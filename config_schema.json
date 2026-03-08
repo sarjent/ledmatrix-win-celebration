@@ -76,9 +76,9 @@
         },
         "animation_style": {
           "type": "string",
-          "description": "Programmatic animation when no GIF is loaded. 'skull_crossbones' — pulsing skull-and-crossbones in brand colors (PIT default). 'waving_flag' — color-wave flag with team abbreviation (CHC default). 'team_logo' — team logo from LEDMatrix assets with pulsing brightness (default for all other teams).",
+          "description": "Programmatic animation when no GIF is loaded. 'skull_crossbones' — pulsing skull-and-crossbones in brand colors. 'waving_flag' — color-wave flag with team abbreviation. 'team_logo' — team logo from LEDMatrix assets with pulsing brightness.",
           "enum": ["waving_flag", "skull_crossbones", "team_logo"],
-          "default": "skull_crossbones"
+          "default": "team_logo"
         }
       },
       "additionalProperties": false
@@ -152,7 +152,7 @@
           "type": "string",
           "description": "Programmatic animation style when no GIF is loaded: 'waving_flag', 'skull_crossbones', or 'team_logo'.",
           "enum": ["waving_flag", "skull_crossbones", "team_logo"],
-          "default": "waving_flag"
+          "default": "team_logo"
         }
       },
       "additionalProperties": false
@@ -475,9 +475,11 @@
       "default": false
     },
     "simulate_team": {
-      "type": "string",
-      "description": "Team abbreviation to simulate winning (blank = first active slot)",
-      "default": ""
+      "type": "integer",
+      "description": "Slot number to simulate winning (1 = team1, 2 = team2, … 5 = team5). Use 0 for the first active slot.",
+      "minimum": 0,
+      "maximum": 5,
+      "default": 0
     },
     "vegas_mode": {
       "type": "string",

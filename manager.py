@@ -121,7 +121,7 @@ class WinCelebrationPlugin(BasePlugin):
         font_name (str)            Font filename in assets/fonts/. Default "4x6-font.ttf".
         font_size (int)            Font size. Default 6.
         simulate_win (bool)        Simulate a win for testing. Default false.
-        simulate_team (str)        Abbreviation to simulate (empty = first team).
+        simulate_team (int)        Slot number to simulate (1–5). Use 0 for first active slot.
     """
 
     def __init__(
@@ -177,9 +177,9 @@ class WinCelebrationPlugin(BasePlugin):
         # display controller uses fast-startup (cached-data) mode and delays
         # the first update() call.
         if self.simulate_win:
-            target = self.simulate_team or next(iter(self._team_states), "")
-            if target in self._team_states:
-                self._trigger_simulation(self._team_states[target])
+            target = self._resolve_simulate_target()
+            if target:
+                self._trigger_simulation(target)
 
         self.logger.info(
             "Win Celebration plugin initialised — %d team(s): %s (display %dx%d)",
@@ -210,7 +210,7 @@ class WinCelebrationPlugin(BasePlugin):
         self.font_name: str = self.config.get("font_name", "4x6-font.ttf")
         self.font_size: int = int(self.config.get("font_size", 6))
         self.simulate_win: bool = bool(self.config.get("simulate_win", False))
-        self.simulate_team: str = self.config.get("simulate_team", "").upper()
+        self.simulate_team: int = int(self.config.get("simulate_team", 0) or 0)
 
     def _load_fonts(self) -> None:
         try:
@@ -629,6 +629,19 @@ class WinCelebrationPlugin(BasePlugin):
         """Return all teams currently in an active celebration window."""
         return [s for s in self._team_states.values() if s.celebrating]
 
+    def _resolve_simulate_target(self) -> Optional["_TeamState"]:
+        """Return the _TeamState for the configured simulate_team slot (1-5), or the first active team if 0."""
+        states = list(self._team_states.values())
+        if not states:
+            return None
+        slot = self.simulate_team
+        if slot == 0:
+            return states[0]
+        if 1 <= slot <= len(states):
+            return states[slot - 1]
+        self.logger.warning("simulate_team slot %d out of range (have %d team(s))", slot, len(states))
+        return None
+
     def _trigger_simulation(self, state: _TeamState) -> None:
         """Activate a simulated win for testing."""
         state.celebrating = True
@@ -662,11 +675,9 @@ class WinCelebrationPlugin(BasePlugin):
     def update(self) -> None:
         """Poll ESPN scoreboards for each configured sport."""
         if self.simulate_win:
-            target_abbr = self.simulate_team or next(iter(self._team_states), "")
-            if target_abbr in self._team_states:
-                state = self._team_states[target_abbr]
-                if not state.celebrating:
-                    self._trigger_simulation(state)
+            target = self._resolve_simulate_target()
+            if target and not target.celebrating:
+                self._trigger_simulation(target)
             self._check_all_expiry()
             return
 
@@ -1007,9 +1018,9 @@ class WinCelebrationPlugin(BasePlugin):
             self._build_frames(state)
 
         if self.simulate_win and not was_simulating:
-            target = self.simulate_team or next(iter(self._team_states), "")
-            if target in self._team_states:
-                self._trigger_simulation(self._team_states[target])
+            target = self._resolve_simulate_target()
+            if target:
+                self._trigger_simulation(target)
         elif not self.simulate_win and was_simulating:
             for state in self._team_states.values():
                 state.celebrating = False
