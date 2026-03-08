@@ -942,17 +942,15 @@ class WinCelebrationPlugin(BasePlugin):
     # ------------------------------------------------------------------
 
     def get_vegas_content_type(self) -> str:
-        return "static" if self._celebrating_teams() else "none"
+        # Always excluded from the Vegas stream; celebration is driven entirely
+        # by the live-priority mechanism so the stream never holds a stale
+        # STATIC placeholder that corrupts scroll geometry on resume.
+        return "none"
 
     def get_vegas_display_mode(self) -> VegasDisplayMode:
-        if self._celebrating_teams():
-            return VegasDisplayMode.STATIC
         return VegasDisplayMode.FIXED_SEGMENT
 
     def get_vegas_content(self) -> Optional[Image.Image]:
-        current = self._team_states.get(self._current_team_slot)
-        if current and current.celebrating and current.frames:
-            return current.frames[current.frame_index % len(current.frames)]
         return None
 
     # ------------------------------------------------------------------

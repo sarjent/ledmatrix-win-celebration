@@ -480,12 +480,6 @@
       "minimum": 0,
       "maximum": 5,
       "default": 0
-    },
-    "vegas_mode": {
-      "type": "string",
-      "description": "How this plugin appears in Vegas scroll mode",
-      "enum": ["static", "fixed"],
-      "default": "static"
     }
   },
   "additionalProperties": false
