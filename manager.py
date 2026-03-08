@@ -145,20 +145,17 @@ class WinCelebrationPlugin(BasePlugin):
         # Per-sport last-update timestamps for independent throttling
         self._last_sport_update: Dict[str, Optional[datetime]] = {}
 
-        # Build per-team state objects from config
-        self._team_states: Dict[str, _TeamState] = {}
-        for team_cfg in self._teams_config:
+        # Build per-team state objects from config, keyed by slot number (1-5)
+        self._team_states: Dict[int, _TeamState] = {}
+        for slot, team_cfg in enumerate(self._teams_config, 1):
             state = _TeamState(team_cfg)
             if not state.abbreviation:
-                self.logger.warning("Team config missing 'abbreviation', skipping: %s", team_cfg)
+                self.logger.warning("Team slot %d missing 'abbreviation', skipping", slot)
                 continue
-            if state.abbreviation in self._team_states:
-                self.logger.warning("Duplicate team '%s', skipping second entry", state.abbreviation)
-                continue
-            self._team_states[state.abbreviation] = state
+            self._team_states[slot] = state
 
         # Multi-team display cycling state
-        self._current_team_abbr: str = ""
+        self._current_team_slot: int = 0
         self._current_team_start: float = 0.0
 
         # Signal high-FPS mode to the display controller for smooth GIF animation
@@ -184,7 +181,7 @@ class WinCelebrationPlugin(BasePlugin):
         self.logger.info(
             "Win Celebration plugin initialised — %d team(s): %s (display %dx%d)",
             len(self._team_states),
-            ", ".join(self._team_states.keys()),
+            ", ".join(f"{slot}:{s.abbreviation}" for slot, s in self._team_states.items()),
             self.display_width,
             self.display_height,
         )
@@ -635,16 +632,15 @@ class WinCelebrationPlugin(BasePlugin):
 
     def _resolve_simulate_target(self) -> Optional["_TeamState"]:
         """Return the _TeamState for the configured simulate_team slot (1-5), or the first active team if 0."""
-        states = list(self._team_states.values())
-        if not states:
+        if not self._team_states:
             return None
         slot = self.simulate_team
         if slot == 0:
-            return states[0]
-        if 1 <= slot <= len(states):
-            return states[slot - 1]
-        self.logger.warning("simulate_team slot %d out of range (have %d team(s))", slot, len(states))
-        return None
+            return next(iter(self._team_states.values()))
+        state = self._team_states.get(slot)
+        if state is None:
+            self.logger.warning("simulate_team slot %d not found (active slots: %s)", slot, list(self._team_states.keys()))
+        return state
 
     def _trigger_simulation(self, state: _TeamState) -> None:
         """Activate a simulated win for testing."""
@@ -873,20 +869,20 @@ class WinCelebrationPlugin(BasePlugin):
         now = time.monotonic()
 
         # Determine which team to show right now
-        current = self._team_states.get(self._current_team_abbr)
+        current = self._team_states.get(self._current_team_slot)
         if current is None or not current.celebrating:
             # Start with the first celebrating team
             current = active[0]
-            self._current_team_abbr = current.abbreviation
+            self._current_team_slot = next(k for k, v in self._team_states.items() if v is current)
             self._current_team_start = now
         elif len(active) > 1 and (now - self._current_team_start) >= self.team_display_duration:
             # Rotate to the next celebrating team
             idx = next(
-                (i for i, s in enumerate(active) if s.abbreviation == self._current_team_abbr),
+                (i for i, s in enumerate(active) if s is current),
                 0,
             )
             current = active[(idx + 1) % len(active)]
-            self._current_team_abbr = current.abbreviation
+            self._current_team_slot = next(k for k, v in self._team_states.items() if v is current)
             self._current_team_start = now
 
         # Signal that this win has been displayed (disables live-priority re-takeover)
@@ -954,7 +950,7 @@ class WinCelebrationPlugin(BasePlugin):
         return VegasDisplayMode.FIXED_SEGMENT
 
     def get_vegas_content(self) -> Optional[Image.Image]:
-        current = self._team_states.get(self._current_team_abbr)
+        current = self._team_states.get(self._current_team_slot)
         if current and current.celebrating and current.frames:
             return current.frames[current.frame_index % len(current.frames)]
         return None
@@ -998,23 +994,23 @@ class WinCelebrationPlugin(BasePlugin):
         super().on_config_change(new_config)
         self._load_config()
         self._load_fonts()
-        self._logo_cache.clear()  # team abbreviations or sports may have changed
+        self._logo_cache.clear()  # team slots, abbreviations, or sports may have changed
 
         # Rebuild team states from the updated config, preserving existing win state
-        new_states: Dict[str, _TeamState] = {}
-        for team_cfg in self._teams_config:
+        new_states: Dict[int, _TeamState] = {}
+        for slot, team_cfg in enumerate(self._teams_config, 1):
             state = _TeamState(team_cfg)
             if not state.abbreviation:
                 continue
-            if state.abbreviation in self._team_states:
-                old = self._team_states[state.abbreviation]
+            old = self._team_states.get(slot)
+            if old:
                 state.celebrating = old.celebrating
                 state.win_expires_at = old.win_expires_at
                 state.last_win_score = old.last_win_score
                 state.win_info = old.win_info
                 state.game_today = old.game_today
                 state.game_date = old.game_date
-            new_states[state.abbreviation] = state
+            new_states[slot] = state
 
         self._team_states = new_states
 
@@ -1035,16 +1031,16 @@ class WinCelebrationPlugin(BasePlugin):
     def get_info(self) -> Dict[str, Any]:
         info = super().get_info()
         info["teams"] = {
-            abbr: {
+            f"slot{slot}_{s.abbreviation}": {
                 "celebrating":    s.celebrating,
                 "win_expires_at": s.win_expires_at.isoformat() if s.win_expires_at else None,
                 "last_win_score": s.last_win_score,
                 "sport":          s.sport,
                 "game_today":     s.game_today,
             }
-            for abbr, s in self._team_states.items()
+            for slot, s in self._team_states.items()
         }
-        info["current_team"] = self._current_team_abbr
+        info["current_team_slot"] = self._current_team_slot
         return info
 
     def cleanup(self) -> None:
