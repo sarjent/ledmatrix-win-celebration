@@ -379,34 +379,34 @@ class WinCelebrationPlugin(BasePlugin):
         skull_cy = h // 2 - skull_ry // 3  # sit slightly above centre
 
         # ── 1. Crossbones (behind skull) ──────────────────────────────────
-        # Cap bone_len so the diagonal stays within the display height;
-        # on wide/short panels (e.g. 192x32) skull_rx can be very large
-        # relative to h, pushing the bone endpoints far off-screen and
-        # hiding the crossbones behind the skull in the visible area.
-        bone_len  = min(int(skull_rx * 1.8), (h - 4) // 2)
+        # Use separate x/y extents so bones spread wide on landscape panels.
+        # bone_y is constrained by panel height; bone_x reaches toward the
+        # display edges, making the X clearly visible on wide/short panels.
+        bone_y = (h - 4) // 2
+        bone_x = max(bone_y, skull_cx - skull_rx - 4)
         bone_half = max(1, skull_rx // 4)  # half-thickness of each bone
 
         # Bone 1: top-left ↘ bottom-right
         for off in range(-bone_half, bone_half + 1):
             draw.line(
-                [(skull_cx - bone_len + off, skull_cy - bone_len),
-                 (skull_cx + bone_len + off, skull_cy + bone_len)],
+                [(skull_cx - bone_x + off, skull_cy - bone_y),
+                 (skull_cx + bone_x + off, skull_cy + bone_y)],
                 fill=bone_color,
             )
         # Bone 2: top-right ↙ bottom-left
         for off in range(-bone_half, bone_half + 1):
             draw.line(
-                [(skull_cx + bone_len + off, skull_cy - bone_len),
-                 (skull_cx - bone_len + off, skull_cy + bone_len)],
+                [(skull_cx + bone_x + off, skull_cy - bone_y),
+                 (skull_cx - bone_x + off, skull_cy + bone_y)],
                 fill=bone_color,
             )
         # Round knobs at bone ends
         knob_r = max(1, bone_half + 1)
         for bx, by in [
-            (skull_cx - bone_len, skull_cy - bone_len),
-            (skull_cx + bone_len, skull_cy + bone_len),
-            (skull_cx + bone_len, skull_cy - bone_len),
-            (skull_cx - bone_len, skull_cy + bone_len),
+            (skull_cx - bone_x, skull_cy - bone_y),
+            (skull_cx + bone_x, skull_cy + bone_y),
+            (skull_cx + bone_x, skull_cy - bone_y),
+            (skull_cx - bone_x, skull_cy + bone_y),
         ]:
             draw.ellipse([bx - knob_r, by - knob_r, bx + knob_r, by + knob_r], fill=bone_color)
 
