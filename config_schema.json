@@ -29,6 +29,30 @@
           "description": "Animated GIF filename. Bundled: jolly-roger.gif (Pirates), fly-the-w.gif (Cubs). Drop any custom GIF alongside manager.py.",
           "default": "jolly-roger.gif"
         },
+        "gif_upload": {
+          "type": "array",
+          "title": "Upload Custom GIF",
+          "description": "Upload a custom animated GIF to use instead of gif_file (overrides gif_file when set). Max 5 MB.",
+          "x-widget": "file-upload",
+          "x-upload-config": {
+            "endpoint": "/api/v3/plugins/assets/upload",
+            "plugin_id": "win-celebration",
+            "max_files": 1,
+            "allowed_types": ["image/gif"],
+            "max_size_mb": 5
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "path": {"type": "string"},
+              "filename": {"type": "string"},
+              "size": {"type": "integer"},
+              "uploaded_at": {"type": "string"}
+            }
+          },
+          "default": []
+        },
         "win_text": {
           "type": "string",
           "description": "Short text overlay when this team wins (e.g. RAISE IT!). Defaults to '<ABBR> WINS!' if blank.",
@@ -78,6 +102,30 @@
           "type": "string",
           "description": "Animated GIF filename. Bundled: jolly-roger.gif (Pirates), fly-the-w.gif (Cubs).",
           "default": "fly-the-w.gif"
+        },
+        "gif_upload": {
+          "type": "array",
+          "title": "Upload Custom GIF",
+          "description": "Upload a custom animated GIF to use instead of gif_file (overrides gif_file when set). Max 5 MB.",
+          "x-widget": "file-upload",
+          "x-upload-config": {
+            "endpoint": "/api/v3/plugins/assets/upload",
+            "plugin_id": "win-celebration",
+            "max_files": 1,
+            "allowed_types": ["image/gif"],
+            "max_size_mb": 5
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "path": {"type": "string"},
+              "filename": {"type": "string"},
+              "size": {"type": "integer"},
+              "uploaded_at": {"type": "string"}
+            }
+          },
+          "default": []
         },
         "win_text": {
           "type": "string",
@@ -129,6 +177,30 @@
           "description": "Animated GIF filename.",
           "default": "celebrate.gif"
         },
+        "gif_upload": {
+          "type": "array",
+          "title": "Upload Custom GIF",
+          "description": "Upload a custom animated GIF to use instead of gif_file (overrides gif_file when set). Max 5 MB.",
+          "x-widget": "file-upload",
+          "x-upload-config": {
+            "endpoint": "/api/v3/plugins/assets/upload",
+            "plugin_id": "win-celebration",
+            "max_files": 1,
+            "allowed_types": ["image/gif"],
+            "max_size_mb": 5
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "path": {"type": "string"},
+              "filename": {"type": "string"},
+              "size": {"type": "integer"},
+              "uploaded_at": {"type": "string"}
+            }
+          },
+          "default": []
+        },
         "win_text": {
           "type": "string",
           "description": "Short text overlay when this team wins.",
@@ -179,6 +251,30 @@
           "description": "Animated GIF filename.",
           "default": "celebrate.gif"
         },
+        "gif_upload": {
+          "type": "array",
+          "title": "Upload Custom GIF",
+          "description": "Upload a custom animated GIF to use instead of gif_file (overrides gif_file when set). Max 5 MB.",
+          "x-widget": "file-upload",
+          "x-upload-config": {
+            "endpoint": "/api/v3/plugins/assets/upload",
+            "plugin_id": "win-celebration",
+            "max_files": 1,
+            "allowed_types": ["image/gif"],
+            "max_size_mb": 5
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "path": {"type": "string"},
+              "filename": {"type": "string"},
+              "size": {"type": "integer"},
+              "uploaded_at": {"type": "string"}
+            }
+          },
+          "default": []
+        },
         "win_text": {
           "type": "string",
           "description": "Short text overlay when this team wins.",
@@ -228,6 +324,30 @@
           "type": "string",
           "description": "Animated GIF filename.",
           "default": "celebrate.gif"
+        },
+        "gif_upload": {
+          "type": "array",
+          "title": "Upload Custom GIF",
+          "description": "Upload a custom animated GIF to use instead of gif_file (overrides gif_file when set). Max 5 MB.",
+          "x-widget": "file-upload",
+          "x-upload-config": {
+            "endpoint": "/api/v3/plugins/assets/upload",
+            "plugin_id": "win-celebration",
+            "max_files": 1,
+            "allowed_types": ["image/gif"],
+            "max_size_mb": 5
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "path": {"type": "string"},
+              "filename": {"type": "string"},
+              "size": {"type": "integer"},
+              "uploaded_at": {"type": "string"}
+            }
+          },
+          "default": []
         },
         "win_text": {
           "type": "string",

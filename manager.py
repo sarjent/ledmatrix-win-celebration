@@ -56,7 +56,12 @@ class _TeamState:
         # Config snapshot (immutable after init)
         self.abbreviation: str = team_cfg.get("abbreviation", "").upper()
         self.sport: str = team_cfg.get("sport", "mlb").lower()
-        self.gif_path: Path = Path(__file__).parent / team_cfg.get("gif_file", "celebrate.gif")
+        gif_upload = team_cfg.get("gif_upload")
+        if gif_upload and isinstance(gif_upload, list) and gif_upload:
+            _up_path = gif_upload[0].get("path", "")
+            self.gif_path: Path = Path(_up_path) if _up_path else Path(__file__).parent / team_cfg.get("gif_file", "celebrate.gif")
+        else:
+            self.gif_path = Path(__file__).parent / team_cfg.get("gif_file", "celebrate.gif")
         self.win_text: str = team_cfg.get("win_text", f"{self.abbreviation} WINS!")
         self.animation_style: str = team_cfg.get("animation_style", "waving_flag")
         self.primary_color: Tuple[int, int, int] = _to_rgb(
