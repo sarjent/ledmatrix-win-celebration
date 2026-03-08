@@ -373,7 +373,7 @@ class WinCelebrationPlugin(BasePlugin):
         bone_color = _dim(bone_base, brightness * 0.75)
 
         # ── Skull geometry (all values scale with display size) ──────────────
-        skull_rx = max(4, w // 8)          # horizontal radius
+        skull_rx = max(4, min(w // 8, h // 3))  # capped so crossbones extend visibly beyond skull
         skull_ry = max(3, h // 4)          # vertical radius
         skull_cx = w // 2
         skull_cy = h // 2 - skull_ry // 3  # sit slightly above centre
