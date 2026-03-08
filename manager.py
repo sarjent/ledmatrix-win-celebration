@@ -232,6 +232,8 @@ class WinCelebrationPlugin(BasePlugin):
         """Load GIF frames for a team, falling back to a programmatic animation."""
         if state.gif_path.exists():
             if self._load_gif_frames(state):
+                state.frame_index = 0
+                state.last_frame_time = 0.0
                 return
             self.logger.warning(
                 "[%s] GIF load failed, using programmatic fallback", state.abbreviation
@@ -242,6 +244,8 @@ class WinCelebrationPlugin(BasePlugin):
                 state.abbreviation, state.gif_path,
             )
         self._build_programmatic_frames(state)
+        state.frame_index = 0
+        state.last_frame_time = 0.0
 
     def _load_gif_frames(self, state: _TeamState) -> bool:
         """
