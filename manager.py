@@ -94,6 +94,9 @@ class _TeamState:
         # Live-priority: fires once per new win to trigger an immediate takeover
         self.live_priority_fired: bool = False
 
+        # Display logging: fires once per win when the celebration first hits the matrix
+        self.display_logged: bool = False
+
 
 # ---------------------------------------------------------------------------
 # Plugin class
@@ -654,6 +657,7 @@ class WinCelebrationPlugin(BasePlugin):
             "opp_score":  4,
         }
         state.live_priority_fired = False
+        state.display_logged = False
         self._build_frames(state)
         self.logger.info(
             "[%s] Simulated win activated — celebrating for %.1f hours",
@@ -821,6 +825,7 @@ class WinCelebrationPlugin(BasePlugin):
                         "opp_score":  opp_score,
                     }
                     state.live_priority_fired = False
+                    state.display_logged = False
                     self._build_frames(state)
                     self.logger.info(
                         "[%s] Win detected! %d-%d vs %s. Celebrating for %.1f hours.",
@@ -881,12 +886,28 @@ class WinCelebrationPlugin(BasePlugin):
                 (i for i, s in enumerate(active) if s is current),
                 0,
             )
+            prev_abbr = current.abbreviation
             current = active[(idx + 1) % len(active)]
             self._current_team_slot = next(k for k, v in self._team_states.items() if v is current)
             self._current_team_start = now
+            self.logger.info(
+                "[%s] Rotating celebration display from %s (%d team(s) active)",
+                current.abbreviation, prev_abbr, len(active),
+            )
 
         # Signal that this win has been displayed (disables live-priority re-takeover)
         current.live_priority_fired = True
+
+        # Log the first time this celebration actually renders on the matrix
+        if not current.display_logged:
+            self.logger.info(
+                "[%s] Celebration now displaying on matrix (win: %s-%s vs %s)",
+                current.abbreviation,
+                current.win_info.get("team_score", "?"),
+                current.win_info.get("opp_score", "?"),
+                current.win_info.get("opp_abbr", "?"),
+            )
+            current.display_logged = True
 
         try:
             # Advance GIF frame based on per-frame duration
